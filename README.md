@@ -1,7 +1,6 @@
 # 🌐 Web Application Development using MERN Stack Lab
 
 This repository contains all lab programs for **Web Application Development using MERN Stack (241AI034)**.
-
 ---
 
 ## 📌 Course Details
