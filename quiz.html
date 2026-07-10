@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CSE Quiz</title>
+
+<style>
+body{
+  margin:0;
+  font-family:Arial, sans-serif;
+  background:#0f172a;
+  color:white;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  min-height:100vh;
+}
+.app{
+  width:100%;
+  max-width:600px;
+  background:#1e293b;
+  padding:20px;
+  border-radius:12px;
+}
+h2{text-align:center;}
+button{
+  width:100%;
+  padding:12px;
+  margin:6px 0;
+  font-size:16px;
+  background:#334155;
+  color:white;
+  border:none;
+  border-radius:8px;
+  cursor:pointer;
+}
+button:hover{background:#475569;}
+button:disabled{opacity:0.6;}
+
+.correct{background:#16a34a !important;}
+.wrong{background:#dc2626 !important;}
+
+.timer{text-align:center;color:#38bdf8;font-weight:bold;}
+.hidden{display:none;}
+
+/* ===== FIREWORKS ===== */
+.firework{
+  position:fixed;
+  width:8px;
+  height:8px;
+  border-radius:50%;
+  animation:explode 1.2s ease-out forwards;
+}
+@keyframes explode{
+  from{transform:scale(0); opacity:1;}
+  to{transform:scale(1.8) translate(var(--x),var(--y)); opacity:0;}
+}
+
+/* SCORE ANIMATION */
+.score-box{
+  text-align:center;
+  animation:pop 1s ease;
+}
+@keyframes pop{
+  0%{transform:scale(0.5); opacity:0;}
+  60%{transform:scale(1.2);}
+  100%{transform:scale(1);}
+}
+
+/* Glow */
+.glow{
+  text-shadow:0 0 10px #38bdf8,0 0 20px #38bdf8;
+}
+
+/* Mobile */
+@media(max-width:600px){
+  .app{min-height:100vh;border-radius:0;}
+}
+</style>
+</head>
+
+<body>
+
+<div class="app">
+
+<!-- START -->
+<div id="start">
+  <h2>Select a Set</h2>
+  <button onclick="startSet(0)">Set 1</button>
+  <button onclick="startSet(1)">Set 2</button>
+  <button onclick="startSet(2)">Set 3</button>
+  <button onclick="startSet(3)">Set 4</button>
+  <button onclick="startSet(4)">Set 5</button>
+</div>
+
+<!-- QUIZ -->
+<div id="quiz" class="hidden">
+  <h2 id="setTitle"></h2>
+  <div class="timer">⏱ <span id="time">15</span>s</div>
+  <p id="question"></p>
+  <div id="options"></div>
+  <button id="nextBtn" class="hidden" onclick="nextQuestion()">Next</button>
+</div>
+
+<!-- RESULT -->
+<div id="result" class="hidden"></div>
+
+</div>
+
+<script>
+const TIME_LIMIT = 30;
+let timer, timeLeft;
+let currentSet = 0;
+let qIndex = 0;
+let score = 0;
+let answered = false;
+
+/* ===== QUESTIONS (5 × 10) ===== */
+const sets = [ /* same questions – unchanged */ 
+  [ {"q":"FIFO works on?","o":["Stack","Queue","Tree","Array"],"a":"Queue"},
+    {"q":"HTML full form?","o":["HyperText Markup Language","HighText","Markup Tool","None"],"a":"HyperText Markup Language"},
+    {"q":"Binary search complexity?","o":["O(n)","O(log n)","O(1)","O(n²)"],"a":"O(log n)"},
+    {"q":"Python function keyword?","o":["fun","def","function","lambda"],"a":"def"},
+    {"q":"Logical AND in C?","o":["&","&&","||","!"],"a":"&&"},
+    {"q":"LIFO structure?","o":["Queue","Stack","Tree","Array"],"a":"Stack"},
+    {"q":"DNS stands for?","o":["Domain Name System","Data Net","Direct Name","None"],"a":"Domain Name System"},
+    {"q":"SQL retrieve command?","o":["INSERT","SELECT","DELETE","UPDATE"],"a":"SELECT"},
+    {"q":"AI full form?","o":["Artificial Intelligence","Auto Info","Advanced Input","None"],"a":"Artificial Intelligence"},
+    {"q":"ML language?","o":["C","Java","Python","PHP"],"a":"Python"} ],
+  [ {"q":"Java is?","o":["Dependent","Independent","Low level","Assembly"],"a":"Independent"},
+    {"q":"OS manages?","o":["Memory","CPU","Processes","All"],"a":"All"},
+    {"q":"Deadlock when?","o":["CPU fast","Memory full","Two wait","Power off"],"a":"Two wait"},
+    {"q":"HTTP port?","o":["21","25","80","443"],"a":"80"},
+    {"q":"Router used to?","o":["Store","Compile","Connect networks","Display"],"a":"Connect networks"},
+    {"q":"DB primary key?","o":["Duplicate","Unique","Null","Foreign"],"a":"Unique"},
+    {"q":"Array index starts from?","o":["0","1","-1","2"],"a":"0"},
+    {"q":"Compiler does?","o":["Run","Translate","Debug","Store"],"a":"Translate"},
+    {"q":"Stack follows?","o":["FIFO","LIFO","Random","Tree"],"a":"LIFO"},
+    {"q":"C is?","o":["Low","Middle","High","Script"],"a":"Middle"} ],
+  [ {"q":"OSI layers count?","o":["5","6","7","8"],"a":"7"},
+    {"q":"RAM is?","o":["Volatile","Permanent","Secondary","External"],"a":"Volatile"},
+    {"q":"Heap used for?","o":["Queue","Sorting","Priority Queue","Search"],"a":"Priority Queue"},
+    {"q":"IP address size?","o":["16","32","64","128"],"a":"32"},
+    {"q":"Loop runs at least once?","o":["for","while","do-while","if"],"a":"do-while"},
+    {"q":"Linux is?","o":["Paid","Free","Closed","None"],"a":"Free"},
+    {"q":"TCP is?","o":["Reliable","Unreliable","Fast","Stateless"],"a":"Reliable"},
+    {"q":"Tree root has?","o":["Parent","Child","None","Two"],"a":"None"},
+    {"q":"Sorting algo?","o":["DFS","BFS","Merge","DNS"],"a":"Merge"},
+    {"q":"Binary tree max children?","o":["1","2","3","4"],"a":"2"} ],
+  [ {"q":"SQL join?","o":["MERGE","JOIN","UNION","GROUP"],"a":"JOIN"},
+    {"q":"Cloud example?","o":["AWS","Excel","Paint","Word"],"a":"AWS"},
+    {"q":"API full form?","o":["Application Program Interface","Auto Input","Advanced Protocol","None"],"a":"Application Program Interface"},
+    {"q":"DB normalization removes?","o":["Data","Dependency","Keys","Tables"],"a":"Dependency"},
+    {"q":"CSS used for?","o":["Logic","Structure","Design","DB"],"a":"Design"},
+    {"q":"HTML tag starts with?","o":["#","<","$","@"],"a":"<"},
+    {"q":"JS used for?","o":["Styling","Logic","DB","OS"],"a":"Logic"},
+    {"q":"MongoDB is?","o":["Relational","Document","Graph","Table"],"a":"Document"},
+    {"q":"AI example?","o":["Calculator","Chatbot","Mouse","Monitor"],"a":"Chatbot"},
+    {"q":"URL means?","o":["Uniform Resource Locator","User Route","Unique","None"],"a":"Uniform Resource Locator"} ],
+  [ {"q":"CPU brain of?","o":["Computer","Human","Robot","OS"],"a":"Computer"},
+    {"q":"Keyboard is?","o":["Input","Output","Storage","Process"],"a":"Input"},
+    {"q":"Monitor is?","o":["Input","Output","CPU","RAM"],"a":"Output"},
+    {"q":"SSD is?","o":["RAM","ROM","Storage","CPU"],"a":"Storage"},
+    {"q":"ALU does?","o":["Logic","Store","Display","Network"],"a":"Logic"},
+    {"q":"Google Chrome is?","o":["OS","Browser","Compiler","Editor"],"a":"Browser"},
+    {"q":"WiFi is?","o":["Wired","Wireless","Optical","None"],"a":"Wireless"},
+    {"q":"Virus affects?","o":["Hardware","Software","Monitor","Keyboard"],"a":"Software"},
+    {"q":"Firewall used for?","o":["Speed","Security","Memory","Power"],"a":"Security"},
+    {"q":"Backup means?","o":["Delete","Copy","Run","Format"],"a":"Copy"} ]
+];
+
+function startSet(n){
+  currentSet=n; qIndex=0; score=0;
+  start.classList.add("hidden");
+  quiz.classList.remove("hidden");
+  loadQuestion();
+}
+
+function startTimer(){
+  clearInterval(timer);
+  timeLeft=TIME_LIMIT;
+  time.innerText=timeLeft;
+  timer=setInterval(()=>{
+    timeLeft--;
+    time.innerText=timeLeft;
+    if(timeLeft===0){clearInterval(timer); nextQuestion();}
+  },1000);
+}
+
+function loadQuestion(){
+  if(qIndex>=10){showResult(); return;}
+  answered=false;
+  nextBtn.classList.add("hidden");
+  setTitle.innerText=`Set ${currentSet+1} - Q${qIndex+1}/10`;
+  const q=sets[currentSet][qIndex];
+  question.innerText=q.q;
+  options.innerHTML="";
+  q.o.forEach(opt=>{
+    const b=document.createElement("button");
+    b.innerText=opt;
+    b.onclick=()=>{
+      if(answered) return;
+      answered=true; clearInterval(timer);
+      if(opt===q.a){b.classList.add("correct"); score++;}
+      else b.classList.add("wrong");
+      nextBtn.classList.remove("hidden");
+    };
+    options.appendChild(b);
+  });
+  startTimer();
+}
+
+function nextQuestion(){qIndex++; loadQuestion();}
+
+/* ===== SUPER FIREWORKS ===== */
+function fireworks(){
+  for(let i=0;i<120;i++){
+    const f=document.createElement("div");
+    f.className="firework";
+    f.style.left="50vw";
+    f.style.top="50vh";
+    f.style.background=`hsl(${Math.random()*360},100%,60%)`;
+    f.style.setProperty("--x",(Math.random()*400-200)+"px");
+    f.style.setProperty("--y",(Math.random()*400-200)+"px");
+    document.body.appendChild(f);
+    setTimeout(()=>f.remove(),1200);
+  }
+}
+
+function showResult(){
+  quiz.classList.add("hidden");
+  result.classList.remove("hidden");
+  fireworks();
+
+  let msg = score>5
+    ? "🎉 Congratulations! Excellent Performance!"
+    : "💪 Better Luck Next Time! Practice makes perfect.";
+
+  result.innerHTML=`
+    <div class="score-box glow">
+      <h2>Final Score</h2>
+      <h1>${score} / 10</h1>
+      <p>${msg}</p>
+      <button onclick="location.reload()">Back to Sets</button>
+    </div>
+  `;
+}
+</script>
+
+</body>
+</html>
