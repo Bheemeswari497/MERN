@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Factorial and Fibonacci</title>
+</head>
+<body>
+
+<h3>Factorial and Fibonacci</h3>
+
+<label>Enter a number:</label>
+<input type="number" id="num"><br><br>
+
+<input type="radio" name="choice" id="fact" value="factorial">
+<label for="fact">Factorial (Number)</label><br>
+
+<input type="radio" name="choice" id="fib" value="fibonacci">
+<label for="fib">Fibonacci (Series)</label><br><br>
+
+<button onclick="calculate()">Calculate</button>
+
+<p id="result"></p>
+
+<script>
+    function factorial(n) {
+        let fact = 1;
+        for (let i = 1; i <= n; i++) {
+            fact *= i;
+        }
+        return fact;
+    }
+
+    function fibonacci(n) {
+        let a = 0, b = 1, temp;
+        let series = "0 1 ";
+
+        for (let i = 2; i < n; i++) {
+            temp = a + b;
+            series += temp + " ";
+            a = b;
+            b = temp;
+        }
+        return series;
+    }
+
+    function calculate() {
+        let n = Number(document.getElementById("num").value);
+        let result = "";
+
+        if (document.getElementById("fact").checked) {
+            result = "Factorial of " + n + " is: " + factorial(n);
+        }
+        else if (document.getElementById("fib").checked) {
+            result = "Fibonacci Series: " + fibonacci(n);
+        }
+        else {
+            result = "Please select an option (Factorial or Fibonacci)";
+        }
+
+        document.getElementById("result").innerHTML = result;
+    }
+</script>
+
+</body>
+</html>
